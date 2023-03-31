@@ -30,3 +30,6 @@ from actionlib.simple_action_client import *
 from actionlib.action_server import *
 from actionlib.simple_action_server import *
 from actionlib.queuing_action_server import *
+from actionlib.multi_goal_action_client import *
+from actionlib.multi_goal_action_server import *
+
