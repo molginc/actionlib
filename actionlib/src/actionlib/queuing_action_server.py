@@ -156,17 +156,11 @@ class QueuingActionServer:
         with self.action_server.lock, self.lock:
             if not result:
                 result = self.get_default_result()
-                # loop through the fields of the result and see if any are error_code
-                for field in result.__slots__:
-                    # check if the field type is a string
-                    if type(getattr(result, field)) == str:
-                        setattr(result, field, text)
             self.current_goal.set_aborted(result, text)
             # abort all goals in the execution queue
-            if len(self.execution_queue)>0:
-                self.current_goal = self.execution_queue[-1]
-                self.execution_queue[-1].set_rejected(None, "This goal was rejected and cleared from the execution queue due to an abortion request by the client.")
-                self.execution_queue.clear()                
+            while len(self.execution_queue)>0:
+                self.execution_queue[0].set_rejected(None, "This goal was rejected and cleared from the execution queue.")
+                self.execution_queue.popleft()                
 
     ## @brief Publishes feedback for a given goal
     ## @param  feedback Shared pointer to the feedback to publish
@@ -184,6 +178,10 @@ class QueuingActionServer:
         with self.action_server.lock, self.lock:
             rospy.logdebug("Setting the current goal as canceled")
             self.current_goal.set_canceled(result, text)
+            # abort all goals in the execution queue
+            while len(self.execution_queue)>0:
+                self.execution_queue[0].set_canceled(None, "This goal was preempted and cleared from the execution queue.")
+                self.execution_queue.popleft()                
 
     ## @brief Allows users to register a callback to be invoked when a new goal is available
     ## @param cb The callback to be invoked
