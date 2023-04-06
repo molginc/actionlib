@@ -191,6 +191,10 @@ class QueuingActionServer:
         else:
             self.goal_callback = cb
 
+    ## @brief Returns the number of goals currently in the queue
+    def get_queue_size(self):
+        return len(self.execution_queue)
+
     ## @brief Allows users to register a callback to be invoked when a new preempt request is available
     ## @param cb The callback to be invoked
     def register_preempt_callback(self, cb):
