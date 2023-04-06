@@ -31,7 +31,9 @@ class MultiGoalActionClient:
         return self.action_clients[-1].wait_for_result()
     
     def get_result(self):
-        return self.action_clients[-1].get_result()
+        result = self.action_clients[-1].get_result()
+        self.remove_action_client(self.action_clients[-1])
+        return result
     
     def get_goal_state(self):
         return self.action_clients[-1].get_state()
@@ -45,10 +47,14 @@ class MultiGoalActionClient:
     def get_num_goals(self):
         return len(self.action_clients)
     
-    def remove_action_client(self, goal_id):
+    def remove_action_client(self, client):
+        self.action_clients.remove(client)
+
+    def remove_all_done_action_clients(self):
         for client in self.action_clients:
-            if client.get_goal_id() == goal_id:
-                self.action_clients.remove(client)
+            # 3: DONE, 4: ACTIVE, 5: WAITING_FOR_RESULT, 8: RECALLED
+            if client.get_state() in [3, 4, 5, 8]:
+                self.remove_action_client(client)
 
     def __getattr__(self, name):
         return getattr(self.main_client, name)
