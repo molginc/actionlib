@@ -1,4 +1,5 @@
 from actionlib import SimpleActionClient
+import rospy
 
 class MultiGoalActionClient:
     def __init__(self, action_server_name, action_type):
@@ -8,6 +9,9 @@ class MultiGoalActionClient:
         self.main_client = SimpleActionClient(self.action_server_name, self.action_type)
         self.action_client = self.main_client.action_client
         self.action_clients = []
+
+        # Start a timer to remove all done action clients every 10 seconds
+        rospy.Timer(rospy.Duration(10.0), self.remove_all_done_action_clients)
 
     def wait_for_server(self):
         # Create a single action client and wait for the server
@@ -50,11 +54,19 @@ class MultiGoalActionClient:
     def remove_action_client(self, client):
         self.action_clients.remove(client)
 
-    def remove_all_done_action_clients(self):
+    def remove_all_done_action_clients(self, event=None):
+        clients_to_remove = []
         for client in self.action_clients:
             # 3: DONE, 4: ACTIVE, 5: WAITING_FOR_RESULT, 8: RECALLED
             if client.get_state() in [3, 4, 5, 8]:
-                self.remove_action_client(client)
+                clients_to_remove.append(client)
+
+        # We do this because we appeded newer clients to the end
+        clients_to_remove.reverse()
+
+        # Remove all clients that are done except the last one
+        while len(clients_to_remove) > 1:
+            self.remove_action_client(clients_to_remove.pop())
 
     def __getattr__(self, name):
         return getattr(self.main_client, name)
